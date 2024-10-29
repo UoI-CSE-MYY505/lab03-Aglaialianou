@@ -38,6 +38,9 @@ image888:  # A rainbow-like image Red->Green->Blue->Red
 image565:
     .zero 512  # leave a 0.5Kibyte free space
 
+image888_back:
+    .zero 512
+    
 .text
 # -------- This is just for fun.
 # Ripes has a LED matrix in the I/O tab. To enable it:
@@ -59,6 +62,12 @@ image565:
     li   a2,  6 # height
     jal  ra, rgb888_to_rgb565
 
+    
+    la    a0, image565
+    la    a3, image888_back
+    li    a1, 19 #widht
+    li    a2, 6  #height
+    
     addi a7, zero, 10 
     ecall
 
@@ -98,9 +107,36 @@ outShowRowLoop:
 # ----------------------------------------
 
 rgb888_to_rgb565:
+    add t0, zero, zero #t0 = 0 for row counter
+rowLoop:
+    bge t0, a2, outRowLoop
+    add t1, zero, zero # t1= 0 for column counter
+columnLoop:
+    bge t1, a1, outColumnLoop
+    lbu t2, 0(a0) #load red to dress a0
+    lbu t3, 1(a0) #load green to dress a0+1
+    lbu t4, 2(a0) #load blue to dress a0+2
+    andi t2, t2,0xf8 # 5 most bits, 3 less bits for red
+    slli t2, t2, 8 #shift left to final place(8bits)
+    andi t3, t3, 0xfc #6 most bits,2 less bits for green
+    slli t3, t3, 3 #shift left 3 bits
+    srli t4, t4, 3 #shift right 3 bits for blue
+    or t2, t2, t3 #combination red and green 
+    or t2, t2, t4 #combination the result and blue
+    sh t2, 0(a3) #store the result to dress a3
+    addi a0, a0, 3 #move input pointer to next pixel
+    addi a3, a3, 3 #move output pointer to next pixel
+    addi t1, t1, 1 #increase 1 the counter of column
+    j columnLoop
+outColumnLoop:
+    addi t0, t0, 1 #increase 1 the counter of row
+    j rowLoop
+outRowLoop:
+    jalr zero, ra, 0
+    
 # ----------------------------------------
 # Write your code here.
 # You may move the "return" instruction (jalr zero, ra, 0).
-    jalr zero, ra, 0
+ 
 
 
